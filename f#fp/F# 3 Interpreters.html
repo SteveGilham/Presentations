@@ -1,0 +1,282 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Functional Programming in F# : Part III &#x2014; Interpreters</title>
+
+		<link rel="stylesheet" href="../reveal.js/css/reveal.css">
+		<link rel="stylesheet" href="../reveal.js/css/theme/simple.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="../reveal.js/lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../reveal.js/css/print/pdf.css' : '../reveal.js/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+		<link rel="stylesheet" href="./assets/decoration.css">		
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides overrides">
+				<section  data-background-image="./assets/background1.jpg">
+					<div class="background1">
+					<h1>Functional Programming in F#</h1>
+					<h2>Part III &#x2014; Interpreters</h2>
+<p><b>Steven Gilham</b></p>
+<!-- p>Principal Software Engineer</p -->
+<p><i>Based on material developed in collaboration with Will Harwood and Laurence Jordan and presented in 2008</i></p>
+					</div>
+				</section>
+				<section>
+					<table><tr>
+					<td class="middle30">
+				    <img src="./assets/fsharp256.png" />
+					</td>
+					<td>
+					<h3>Course Overview</h3>
+				<ul><li>Introduction to Functional Programming via Circuits</li>
+<li>Lexing and Parsing</li>
+<li>Interpreters<br>
+<ul><li><span class="highlight">Today's presentation</span></li></ul></li>
+<li>Distributed and Concurrent Programming</li>
+<li>Advanced topics<br>
+<ul><li>Continuations, monads &amp; computations, etc.</li></ul></li>
+<li>Non-functional bits<br>
+<ul><li>Assignment, Objects, Exceptions, Libraries, .net, type providers etc.</li></ul></li></ul>
+					</td></tr></table>
+				</section>
+				<section data-background-image="./assets/background2.jpg">
+					<div class="background2">
+					<h3>Interpreters</h3>
+<p><b>A LISP evaluator</b></p>
+					</div>
+				</section>
+				<section><h3>A LISP evaluator</h3>
+				<p>A simple language</p>
+				<table width="100%">
+					<tr>
+					<td class="middle40"><code>Expr =</code>
+						<pre style="box-shadow: none;background-color: DeepSkyBlue">    // Special Forms
+    (LET list_of_dotted_pairs EXPR) |
+    (IF EXPR EXPR EXPR) |
+    (LAMBDA list_of_variables EXPR) |
+    (REC variable list_of_variables EXPR) |
+    (QUOTE EXPR) |
+    (EVAL EXPR) |
+    (EVAL EXPR environment_expression) |</pre>
+					</td>
+<td class="middle60"><p>Examples</p><pre><code>(Let ((x . 1) (y. 2)) (Add x y))
+(IF (EQ x y) x (CONS x y))
+(LAMBDA (x y) (ADD x y 1))
+(REC F (N) (IF (EQ x 0) 1 (MULT N (F (SUB N 1)))))
+(QUOTE (1 2 3))
+(EVAL (QUOTE (ADD 1 2)))
+(EVAL (QUOTE (ADD X 1)) (QUOTE ((X . 2))))</code></pre></td>
+				</tr><tr>
+					<td class="middle40"><pre style="box-shadow: none;background-color: Goldenrod">    // Call by Value
+    (EXPR EXPR*) |
+    SYMBOL |
+    NUMBER</pre>
+					</td>
+<td class="middle60"><pre><code>(ADD (LENGTH L) (LENGTH J) 3)
+X
+3</code></pre></td>
+				</tr><tr>
+					<td class="middle40"><pre style="box-shadow: none">list_of_dotted_pairs = ((EXPR . EXPR)*)
+list_of_variables = ( SYMBOL*)
+variable = SYMBOL
+environment_expression = EXPR</pre>
+					</td>
+<td class="middle50">&nbsp;</td>
+				</tr>				
+				</table>
+				</section>
+				<section><h3>Built-in Functions</h3>
+<p>TRUE<br/>
+FALSE<br/>
+HD<br/>
+TL<br/>
+CONS<br/>
+ADD<br/>
+MULT<br/>
+SUB<br/>
+DIVNULL<br/>
+ATOMP<br/>
+SYMBOLP<br/>
+NUMBERP<br/>
+LISTP<br/>
+ZEROP<br/>
+EQUAL</p></section>
+				<section><h3>Structure of the Evaluator</h3>
+<pre>to eval an expression e in an environment env =
+	if e is NIL then NIL
+	else if e is a number n then n
+	e is a SYMBOL then look it up in the environment
+	else if e is a special form
+		 then evaluate special form
+	else if e is of the form (expr1 expr2 … exprN)
+		then (eval expr1 env) (eval expr2 env) … (eval exprN env)
+	else ERROR </pre></section>
+				<section><h3>Structure of the Environment</h3>
+				<p>We extend the algebraic type we used last time with the notion of a
+					 function in the form of the <code>COMP</code> type; and simplify the value of a <code>SYMBOL</code> to be a string.</p>
+<pre><code>type [&lt;StructuralEquality;NoComparison&gt;] SEXPR = SYMBOL of string
+                                                       | NUMBER of int | NIL
+                                                       | CONS of (SEXPR * SEXPR)
+                                                       | COMPUTATION of COMP
+and [&lt;ReferenceEquality;NoComparison&gt;] COMP = { func : SEXPR -&gt; SEXPR } ;;</code></pre>
+<p>The environment is a SEXPR which is a list of SYMBOL * SEXPR pairs</p>
+<img src="./assets/Environment.png">
+</section>
+				<section class="conceptual" data-background-image="./assets/Concept.svg">					
+				<h3>Concept</h3>
+				<div>
+<p>"<code>and</code>" collects mutually recursive definitions into one</p>
+<p>We need to instruct the compiler how to determine whether two <code>SEXPR</code> values are the same, because there is no natural equality on function values.</p>
+<p><code>StructuralEquality</code> means things are identical if their types and members are </p>
+<p><code>ReferenceEquality</code> means things are identical only if they refer to the same entity. </p>
+<p><code>NoComparison</code> means there is no ordering (less than/greater than) of items. </p>
+<p>The value of a <code>COMP</code> type is a record, a series of named fields gathered together. 
+In this case there is one field, and that has a value that is a function mapping one <code>SEXPR</code> to another.</p>
+</div>
+				</section>
+				<section><h3>Representation</h3>
+<img src="./assets/Evaluator.png">
+				</section>
+
+				<section><h3>Call-by-value forms</h3>
+<p><code>eval (SYMBOL s) env = lookup (SYMBOL s) env</code><p>
+<pre><code>| (SYMBOL s) -&gt; lookup (SYMBOL s) e</code></pre>
+<p><code>eval (NUMBER i) env = NUMBER i</code><p>
+<pre><code>| (NUMBER i) -&gt; (NUMBER i)</code></pre>
+<p><code>eval NIL env = NIL</code><p>
+<pre><code>|NIL -&gt; NIL</code></pre>
+<p><code>eval CONS(E,Rest) env = (eval E env) (MAP (evalin env) Rest)</code><p>
+<pre><code>|CONS(a,b) -&gt; apply (eval e a) (MAP (eval e) b)</code></pre>
+<p>Default environment is a list of <code>SYMBOL * COMPUTATION</code> pairs defining the built-ins</p>
+<p>In code, <code>eval</code> is <code>environment -&gt; SEXPR -&gt; SEXPR</code> rather than <code>SEXPR -&gt; environment -&gt; SEXPR</code></p>
+				</section>
+
+				<section><h3>Special form QUOTE</h3>
+<p><code>eval (QUOTE E) env = E</code></p>
+<pre><code>|CONS((SYMBOL "QUOTE"),CONS(X,NIL)) -&gt; X</code></pre>
+<p>Simply unpacks what is quoted</p>
+				</section>
+
+				<section><h3>Special form IF</h3>
+<p>NIL is the only "falsy" value; everything else is "truthy"</p>
+<p><code>eval (IF E1 E2 E3) env = if (eval E1 env) then (eval E2 env) else (eval E3 env)</code></p>
+<pre><code>|CONS((SYMBOL "IF"), b) -&gt; match b with
+                           | CONS(cond, CONS(thenpart,CONS(elsepart,NIL))) -&gt;
+                                  if (eval e cond) = NIL
+                                      then (eval e elsepart)
+                                      else (eval e thenpart)
+                           | _ -&gt; ERROR2 "IF" b)</code></pre>
+<p>Error if there are not the right number of elements in the expression</p>
+				</section>
+
+				<section><h3>Special form LET</h3>
+<p><code>eval (LET BINDINGS E) env =<br/> 
+&nbsp;&nbsp;&nbsp;&nbsp;let pairs = applySnd (evalin env)  BINDINGS<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;in <span class="highlight">eval E (APPEND pairs env)</span> where evalin  env E = eval E env</code></p>
+<p>Having made a binding, we have augmented our environment for the evaluation of the rest of the expression</p>
+<p><code>applySnd</code> is like map by applies to a list of pairs, and the second element of each pair is mapped</p>
+<p><code>APPEND</code> augments its second argument (here, the environment) with its first (both are lists of <code>SEXPR * SEXPR</code>)</p>
+<pre><code>|CONS((SYMBOL "LET"),b) -&gt; match b with
+                           | CONS(bindings, CONS(body, NIL)) -&gt;
+                                  let pairs = applySnd (eval e) bindings
+                                  eval (APPEND pairs e) body
+                           | _ -&gt; ERROR2 "LET" b</code></pre>
+				</section>
+
+				<section><h3>Special form LAMBDA</h3>
+<p><code>eval (LAMBDA FORMALS E) env = <br/> 
+&nbsp;&nbsp;&nbsp;&nbsp;fun actuals -&gt; let pairs = ZIP FORMALS actuals<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;in <span class="highlight">eval E (APPEND pairs env)</span></code></p>
+<p>Having made a binding of argument to argument name, we have augmented our environment for the evaluation of the rest of the expression</p>
+<p><code>ZIP</code> takes a pair of lists and makes a list of pairs</p>
+<pre><code>|CONS((SYMBOL "LAMBDA"),b) -&gt; match b with
+                              | CONS(formals, CONS(body, NIL)) -&gt;
+                                  COMPUTATION {func = (fun actuals -&gt; let pairs = ZIP formals  actuals
+                                  eval (APPEND pairs e) body)}
+                              | _ -&gt; ERROR2 "LAMBDA" b</code></pre>
+				</section>
+
+				<section><h3>Special form REC</h3>
+				<p>Recursive Named function &#x2014;
+needs a name so it can refer to itself</p>
+<p><code>eval (REC NAME FORMALS E) env =<br/> 
+&nbsp;&nbsp; let rec f = fun actuals -&gt; let pairs = ZIP FORMALS actuals<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;in <span class="highlight">eval E (APPEND pairs (CONS(CONS(NAME,f), env))</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;in f</code></p>
+<p>We augment our environment with the function <i>name</i> (pointing to the self-referencing function) for the evaluation of the rest of the expression</p>
+<pre><code>|CONS((SYMBOL “REC"),b) -&gt; match b with
+                              | CONS(F, CONS(formals, CONS(body, NIL))) -&gt;
+                                  let rec f = COMPUTATION {func = (fun actuals -&gt; let pairs = ZIP formals  actuals
+                                  eval (APPEND pairs (CONS(CONS(F, f), e))) body)}
+                              | _ -&gt; ERROR2 “REC" b</code></pre>
+				</section>
+
+				<section><h3>Extras &#x2014; code is data is code</h3>
+<p>Get the environment : <br/><code>eval  (ENV) env = env</code><p>
+<pre><code>|CONS((SYMBOL "ENV"), NIL)  -&gt; e</code></pre>
+<p>Evaluating an expression in the current environment : <br/><code>eval  (EVAL E) env = eval (eval E e) env</code><p>
+<pre><code>|CONS((SYMBOL "EVAL"), CONS(X,NIL)) -&gt; eval e (eval e X)</code></pre>
+<p>Evaluating an expression in a new environment :<code>eval  (EVAL E ENV) env = eval (eval E env) (eval ENV env)</code><p>
+<pre><code>|CONS((SYMBOL "EVAL"), CONS(X,CONS(Y,NIL))) -&gt; eval (eval NIL Y) (eval NIL X)</code></pre>
+<p>Note use of pattern matching to distinguish the shape of the argument list (number of arguments)</p>
+				</section>
+
+				<section><h3>Remaining cases</h3>
+<p>Function application is modelled by taking a fully evaluated list, whose first element is expected to be a computation and applying it to the remainder of the list of arguments.<p>
+<pre><code>|CONS(a, b)  -&gt; apply (eval e a) (MAP (eval e) b)</code></pre>
+<p>Built-in functions are represented in this model by providing a standard environment with computations defined.<p>
+<p>Anything else that is superficially syntactically valid but matches none of the expected forms results in an error.<p>
+<p>All the missing pieces are in <a href="./F%23 3 Interpreters.fsx">the linked source file</a>.</p>
+				</section>				
+
+				<section><h3>Representation</h3>
+<img src="./assets/Evaluator.png">
+				</section>
+
+				<section><h3>Exercise 3.1</h3>
+<p>Modify the parser from last time to work with the new definition of SEXPR</p>
+<p>Add Boolean operators AND, OR, NOT, EQUIV, IMPLIES to evaluator</p>
+<p>Add built in functions to map between SYMBOLS and List of Characters and back again.</p>
+<p>Add QUASIQUOTE (QQ), UNQUOTE with the meaning that (QQ (ADD (UNQUOTE X) (UNQUOTE Y) 23)) in an environment where X and Y are 123 and Z respectively evaluates to the SEXPR (ADD 123 Z 23).</p>
+<p><span class="highlight">(Advanced)</span> Change the evaluator to allow deal with interpreted code in the environment e.g. F is bound to (INTERPRET E) in env and (F X) is:  (eval E env)(eval X env). Alternatively extend the type of SEXPR to include an INTERPRETED constructor and do the same.</p>
+<p><span class="highlight">(Advanced)</span> Change the evaluator to allow special forms to be placed in the environment.</p>
+</section>
+				<section><h1 class="highlight">Wrapping up</h1>
+				<ul><li>Q&amp;A</li><li><p><a href="./F%23 3 Interpreters.fsx">The collected code from the slides</p></a></li></ul></section>
+				<section data-background-image="./assets/background1.jpg">
+				<h1 class="endtitle">つづく</h1></section>
+			</div>
+		</div>
+
+		<script src="../reveal.js/lib/js/head.min.js"></script>
+		<script src="../reveal.js/js/reveal.js"></script>
+
+		<script>
+			// More info https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				history: true,
+
+				// More info https://github.com/hakimel/reveal.js#dependencies
+				dependencies: [
+					{ src: '../reveal.js/plugin/markdown/marked.js' },
+					{ src: '../reveal.js/plugin/markdown/markdown.js' },
+					{ src: '../reveal.js/plugin/notes/notes.js', async: true },
+					{ src: '../reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+		</script>
+	</body>
+</html>
