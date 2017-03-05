@@ -5,4 +5,4 @@ Web-based presentations using [reveal.js](https://github.com/hakimel/reveal.js),
 
 ## Subjects
 
-* Functional programming using F# -- an introduction.  If you're new to the style, you'll say "What is this old guy talking about?", and if you are familiar with it, you'll say "Why is he belabouring the obvious?"
+* [Functional programming using F#](https://stevegilham.github.io/Presentations/f%23fp/index.html) -- an introduction.  If you're new to the style, you'll say "What is this old guy talking about?", and if you are familiar with it, you'll say "Why is he belabouring the obvious?"
