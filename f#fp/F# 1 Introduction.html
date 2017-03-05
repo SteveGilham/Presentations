@@ -130,7 +130,7 @@
 <td  style="width:50%" class="fragment"><pre><code>type Bit = Zero | One;;</code></pre></td>
 				</tr></table>
 				</section>
-				<section class="conceptual" data-background-image="./assets/concept.svg">					
+				<section class="conceptual" data-background-image="./assets/Concept.svg">					
 				<h3>Concept</h3>
 				<div>
 				<p>An Algebraic Data Type</p>
@@ -140,7 +140,7 @@
 <li>Are a type (with closed set of sub-types)</li>
 <li>Avoid the <a href="http://wiki.c2.com/?PrimitiveObsession">Primitive Obsession anti-pattern</a></li></ul></div>
 				</section>
-				<section class="conceptual" data-background-image="./assets/concept.svg"><h3>Concept</h3>
+				<section class="conceptual" data-background-image="./assets/Concept.svg"><h3>Concept</h3>
 				<div>
 				<p>Code Fragments</p>
 <ul><li>These examples are intended to execute in the F# interactive console.</li>
@@ -164,20 +164,20 @@
 				</tr></table>
 				</section>
 
-				<section class="conceptual" data-background-image="./assets/concept.svg"><h3>Concept</h3>
+				<section class="conceptual" data-background-image="./assets/Concept.svg"><h3>Concept</h3>
 				<div><p>Functions</p>
 <ul><li><code>AND</code> has two arguments – parentheses are not used to group argument lists</li>
 <li>Functions return the value of the last expression evaluated</li>
 <li>Everything is an expression.</li></ul></div>
 				</section>
-				<section class="conceptual" data-background-image="./assets/concept.svg"><h3>Concept</h3>
+				<section class="conceptual" data-background-image="./assets/Concept.svg"><h3>Concept</h3>
 				<div><p>Functions ctd.</p>
 <ul><li>Neither <code>AND</code> nor its two arguments have explicitly specified types </li>
 <li>The compiler inferred them; if it had been unable to, we would have to write
 <pre><code>let AND (x:Bit) (y:Bit) : (Bit*Bit) = ...</pre></code></li>
 <li>The type of <code>AND</code> is <code>Bit -&gt; Bit -&gt; (Bit*Bit)</code></li></ul></div>
 				</section>
-				<section class="conceptual" data-background-image="./assets/concept.svg"><h3>Concept</h3>
+				<section class="conceptual" data-background-image="./assets/Concept.svg"><h3>Concept</h3>
 <div><ul><li>A <code>match</code> expression compares one value against an exhaustive 
 list of options and results in the corresponding expression</li>
 <li>The one value here is a tuple literal</li>
@@ -230,7 +230,7 @@ a cmd or PowerShell prompt</li></ul></li>
 				</tr>			
 				</table>
 				</section>
-				<section class="conceptual" data-background-image="./assets/concept.svg"><h3>Concept</h3>
+				<section class="conceptual" data-background-image="./assets/Concept.svg"><h3>Concept</h3>
 <div><ul><li>The “=“ is mathematical – the left hand side is that thing which satisfies the equation</li>
 <li>Binds a value to a name</li>
 <li>The LHS is a limited pattern match; a tuple RHS can be equated to a tuple LHS – a “destructuring” binding.</li>
@@ -255,7 +255,7 @@ a cmd or PowerShell prompt</li></ul></li>
 //                | (::) of 'a * 'a list</code></pre></td>
 				</tr></table>
 				</section>
-				<section class="conceptual" data-background-image="./assets/concept.svg"><h3>Concept</h3>
+				<section class="conceptual" data-background-image="./assets/Concept.svg"><h3>Concept</h3>
 <div><ul><li>“//” introduces a comment for the rest of the line</li>
 <li>“(*” and “*)” indicate a block comment</li>
 <li>This “definition” of list is descriptive only</li>
@@ -273,7 +273,7 @@ a cmd or PowerShell prompt</li></ul></li>
    | (x::xs) -> 1 + (length xs);;</code></pre></td>
 				</tr></table>
 				</section>
-				<section class="conceptual" data-background-image="./assets/concept.svg"><h3>Concept</h3>
+				<section class="conceptual" data-background-image="./assets/Concept.svg"><h3>Concept</h3>
 <div><ul><li>“<code>rec</code>” defines a recursive function</li>
 <li>It simply means that the function's name is visible inside its own body</li>
 <li>To avoid the need for mutable counters or flags, recursion replaces loops for iterative operations.</li></ul></div>
@@ -310,7 +310,7 @@ let rec rev l =
 				<ul><li> → 256</li></ul>
 				</ul>
 				</section>
-				<section class="conceptual" data-background-image="./assets/concept.svg"><h3>Concept</h3>
+				<section class="conceptual" data-background-image="./assets/Concept.svg"><h3>Concept</h3>
 <div><ul><li>F# defines these very useful higher-order functions as infix operators
 <pre><code>let (|>) f x = f x
 let (>>) f g x = f(g x)</code></pre></li>
@@ -345,7 +345,7 @@ or
 						<pre><code>let len l = reduce ( + ) 0 (map (fun x -> 1) l);;</code></pre>
 </li></ul>
 				</section>
-				<section class="conceptual" data-background-image="./assets/concept.svg"><h3>Concept</h3>
+				<section class="conceptual" data-background-image="./assets/Concept.svg"><h3>Concept</h3>
 <div><ul><li>In the expression 
 <pre><code>let len l = reduce ( + ) 0 (map (fun x -> 1) l);;</code></pre>
 the infix operator “plus” is named in parentheses</li>
