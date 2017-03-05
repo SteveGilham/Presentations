@@ -1,0 +1,33 @@
+/* overrrides */
+code { font-family: Courier New, Courier, monospace !important; }
+img { border: none !important; box-shadow: none !important;}
+.overrides {font-size: 50% !important; text-align: left !important;}
+a {color: DarkGoldenrod !important; font-weight: bold !important;}
+
+/* specializations */
+h3 {color: Goldenrod !important;}
+.conceptual > div {width: 50%; color: white; margin: 0px auto !important;}
+.conceptual h3 {margin: 2em !important; font-weight: bold !important; color: black !important;}
+
+.highlight {color: Goldenrod !important;}
+
+.vcentre { display: table; }
+.vcentred { display: table-cell; vertical-align: middle; }
+
+.background1 {width: 66%; background-color: rgba(218, 165, 32, 0.5);padding:1em  !important;} /*#DAA520 Goldenrod*/
+.background1 h1 {color: white}
+.endtitle  {color: Goldenrod !important; font-size: 200%; margin: 0px auto !important;
+            background-color: rgba(255, 255, 255, 0.5);padding:1em !important;
+            width: 20%; text-align: center; font-weight: bold;}
+
+.background2 {width: 66%; background-color: rgba(255, 255, 255, 0.5); padding:1em !important;}
+
+.background3 {background-color: rgba(255, 255, 255, 0.5);padding:1em !important;display: table;float: right;}
+.background3 h3 {height: 8em; width: 18em;text-align: right; display: table-cell; 
+                 vertical-align: middle; color: black !important; font-weight: bold !important;}
+
+.middle30 {width:30%;vertical-align: middle !important;}
+.middle40 {width:40%;vertical-align: middle !important;}
+.middle50 {width:50%;vertical-align: middle !important;}
+.middle60 {width:60%;vertical-align: middle !important;}
+.middle70 {width:70%;vertical-align: middle !important;}

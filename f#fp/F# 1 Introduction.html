@@ -1,0 +1,468 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Functional Programming in F# : Part I &#x2014; Introduction</title>
+
+		<link rel="stylesheet" href="../reveal.js/css/reveal.css">
+		<link rel="stylesheet" href="../reveal.js/css/theme/simple.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="../reveal.js/lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../reveal.js/css/print/pdf.css' : '../reveal.js/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+		<link rel="stylesheet" href="./assets/decoration.css">		
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides overrides">
+				<section  data-background-image="./assets/background1.jpg">
+					<div class="background1">
+					<h1>Functional Programming in F#</h1>
+					<h2>Part I &#x2014; Introduction</h2>
+<p><b>Steven Gilham</b></p>
+<!-- p>Principal Software Engineer</p -->
+<p><i>Based on material developed in collaboration with Will Harwood and Laurence Jordan and presented in 2008</i></p>
+					</div>
+				</section>
+				<section>
+					<table><tr>
+					<td class="middle30">
+				    <img src="./assets/fsharp256.png" />
+					</td>
+					<td>
+					<h3>Course Overview</h3>
+				<ul><li>Introduction to Functional Programming via Circuits<br>
+<ul><li><span class="highlight">Today's presentation</span></li></ul></li>
+<li>Lexing and Parsing</li>
+<li>Interpreters</li>
+<li>Distributed and Concurrent Programming</li>
+<li>Advanced topics<br>
+<ul><li>Continuations, monads &amp; computations, etc.</li></ul></li>
+<li>Non-functional bits<br>
+<ul><li>Assignment, Objects, Exceptions, Libraries, .net, type providers etc.</li></ul></li></ul>
+					</td></tr></table>
+				</section>
+				<section data-background-image="./assets/background2.jpg">
+					<div class="background2">
+					<h3>Introduction to Functional Programming via circuits</h3>
+<p><b>Basic Concepts</b></p>
+					</div>
+				</section>
+				<section>
+					<table><tr>
+					<td style="vertical-align: middle;width: 30%;">
+				    <img src="./assets/fsharp256.png" />
+					</td>
+					<td>
+					<h3>Introduction to Functional Programming</h3>
+				<ul><li>Background<br>
+<ul><li>and Vocabulary</li></ul></li>
+<li>Digital Circuits</li>
+<li>Some Basic Tools</li>
+<ul><li>And generalizations</li></ul></li>
+</ul>
+					</td></tr></table>
+				</section>
+				<section data-background-image="./assets/background3.jpg">
+				<div class="background3"><h3>Background</h3></div>
+				</section>
+				<section><h3>Caveat</h3>
+<p>This series covers functional-programming concepts, illustrated in F# syntax</p>
+<p>It is intended as a way for beginners who have started to use the language to avoid just writing 
+	<span style="text-decoration: line-through;">FORTRAN</span> 
+	<span style="text-decoration: line-through;">C/C++</span> old-school C# in an(y )other language.</p>
+<p>It is <span class="highlight">not</span> intended as an introductory guide to the
+ language syntax itself, though I'll put in asides about the notations and concepts used.</p>
+				</section>
+				<section><h3>What is F#?</h3>
+<ul><li>F# is a mature, open source, cross-platform, functional-first programming language<br>
+<ul><li>F# Foundation at <a href="http://fsharp.org">http://fsharp.org</a></li></ul></li>
+<li>A .net language</li>
+<ul><li>All the familiar tools and libraries</li></ul></li>
+<li>One of the “ML” family of languages</li>
+<ul><li>ML 1978</li><li>CAML 1985</li><li>OCAML 1996</li><li>F# 2002</li>
+</ul></li>
+</ul>
+				</section>
+				<section><h3>What is an “ML” language?</h3>
+<ul><li>First class functions<br>
+<ul><li>Familiar from C# LINQ and the <code>delegate</code>, <code>Action</code> and <code>Function</code> types</li></ul></li>
+<li>Strict (“eager”) evaluation<br>
+<ul><li>Arguments evaluated before calling functions</li></ul></li>
+<li>Strongly typed with type inference</li>
+<li>Polymorphic (C# “Generic”) and user definable types</li>
+<li>Immutable by default<br>
+<ul><li>Mutable references for controlled destructive updates</li></ul></li>
+<li>Garbage Collection</li>
+<li>Exception Handling</li>
+</ul>
+				</section>
+				<section><h3>What is Functional Programming?</h3>
+				<ul>
+					<li>No one single agreed definition</li>
+					<li class="fragment">“The style of programming where your values are called i, k, and x 
+						and your constructs are [something-or-other]-morphisms”<br>
+<ul><li>Plenty of different morphisms to choose from! <a href="https://pdfs.semanticscholar.org/fec6/b29569eac1a340990bb07e90355efd2434ec.pdf">(examples)</a></li></ul></li>
+					<li class="fragment">Programming where your functions are 
+						<span class="highlight">pure</span> and your 
+						data <span class="highlight">immutable</span></li>
+					<li class="fragment">Programs as pipelines transforming your data<br>
+<ul><li>As opposed to OO programming where data entities talk to one-another</li></ul></li>						
+				</ul>
+				</section>
+				<section data-background-image="./assets/background3.jpg">
+				<div class="background3"><h3>Digital Circuits</h3></div></section>
+				<section><h3>Representation</h3>
+				<p>Our first bit of syntax</p>
+				<table><tr>
+					<td style="width:50%"><ul><li>Signals have two possible values<br>
+<ul><li>Up/Down, On/Off, True/False, One/Zero ...</li></ul></li></td>
+<td  style="width:50%" class="fragment"><pre><code>type Bit = Zero | One;;</code></pre></td>
+				</tr></table>
+				</section>
+				<section class="conceptual" data-background-image="./assets/concept.svg">					
+				<h3>Concept</h3>
+				<div>
+				<p>An Algebraic Data Type</p>
+<ul><li><code>enum</code> on steroids</li>
+<li>Can have many values</li>
+<li>Can associate data</li>
+<li>Are a type (with closed set of sub-types)</li>
+<li>Avoid the <a href="http://wiki.c2.com/?PrimitiveObsession">Primitive Obsession anti-pattern</a></li></ul></div>
+				</section>
+				<section class="conceptual" data-background-image="./assets/concept.svg"><h3>Concept</h3>
+				<div>
+				<p>Code Fragments</p>
+<ul><li>These examples are intended to execute in the F# interactive console.</li>
+<li>The ";;" syntax is an ML end-of-expression mark, required to tell the
+	 interpreter that there is a compilable unit to process now.</li>
+<li>They are not needed in project-based code</li></ul></div>
+				</section>
+
+				<section><h3>Operations</h3>
+				<p>Functions and Pattern matching</p>
+				<table><tr>
+					<td style="width:50%">Basic operations AND, OR, NOT, XOR
+						<img src="./assets/And.png" />
+					</td>
+<td  style="width:50%" class="fragment"><pre><code>let AND x y = 
+  match (x,y) with
+  |(Zero, Zero) -> Zero
+  |(Zero, One) -> Zero
+  |(One, Zero) -> Zero
+  |(One, One) -> One ;;</code></pre></td>
+				</tr></table>
+				</section>
+
+				<section class="conceptual" data-background-image="./assets/concept.svg"><h3>Concept</h3>
+				<div><p>Functions</p>
+<ul><li><code>AND</code> has two arguments – parentheses are not used to group argument lists</li>
+<li>Functions return the value of the last expression evaluated</li>
+<li>Everything is an expression.</li></ul></div>
+				</section>
+				<section class="conceptual" data-background-image="./assets/concept.svg"><h3>Concept</h3>
+				<div><p>Functions ctd.</p>
+<ul><li>Neither <code>AND</code> nor its two arguments have explicitly specified types </li>
+<li>The compiler inferred them; if it had been unable to, we would have to write
+<pre><code>let AND (x:Bit) (y:Bit) : (Bit*Bit) = ...</pre></code></li>
+<li>The type of <code>AND</code> is <code>Bit -&gt; Bit -&gt; (Bit*Bit)</code></li></ul></div>
+				</section>
+				<section class="conceptual" data-background-image="./assets/concept.svg"><h3>Concept</h3>
+<div><ul><li>A <code>match</code> expression compares one value against an exhaustive 
+list of options and results in the corresponding expression</li>
+<li>The one value here is a tuple literal</li>
+<li>A simpler way of writing the exhaustive list is to use a wildcard “_” that matches anything
+	<pre><code>let AND x y = 
+  match (x, y) with
+  | (One, One) -> One
+  | _ -> Zero;;</code></pre>
+	</li></ul></div>
+				</section>
+				<section><h3>Exercise 1.1</h3>
+<p>There will be more!</p>
+<p>Define the standard Bit functions <code>OR, XOR, NOT, NAND, NOR</code></p></section>
+				<section data-background-image="./assets/Aside.svg"><h3>Digression – Set-up for exercises</h3></section>
+				<section><h3>Getting and Running F#</h3>
+<ul><li>Repair install Visual Studio (or grab the latest upgrade if you aren't up to date),
+	 and check the F# box under Programming Languages</br>
+<ul><li>Or download Visual F# Tools 4.0 RTM (<a 
+href="https://www.microsoft.com/en-us/download/details.aspx?id=48179">https://www.microsoft.com/en-us/download/details.aspx?id=48179</a>)</li></ul></li>
+<li>All these exercises will be done in F# interactive mode, either<br>
+<ul><li>Open the F# Interactive Window in Visual Studio</li>
+<li>Run <code>'C:\Program Files (x86)\Microsoft SDKs\F#\4.0\Framework\v4.0\Fsi.exe'</code> at 
+a cmd or PowerShell prompt</li></ul></li>			
+				</section>
+				<section data-background-image="./assets/background3.jpg">
+				<div class="background3"><h3>Digital Circuits<br/>Continues...</h3></div></section>
+
+				<section><h3>Binary Addition</h3>
+				<p>An adder takes two streams of bits and produces a steam of bits as the answer</p>
+				<img src="./assets/FullAdder.png" />
+				<p>Initial Condition: carry output is Zero</p>
+				</section>
+				<section><h3>Half-Adder and Full-Adder</h3>
+				<table><tr>
+					<td style="width:50%">In standard fashion, we build an adder from two half-adders 
+						(which take two inputs and produce the XOR as the sum stream and the 
+						AND as the carry stream)</td>
+<td  style="width:50%"><pre><code>let Half_Adder x y =
+ (XOR x y, AND x y);;</code></pre></td>
+				</tr>
+<tr>
+					<td style="width:50%"><p>One half-adder takes the two inputs; the sum stream 
+						from that is passed into the second half-adder along with the 
+						previous carry bit, and the resulting sum forms the final output.</p>
+						<p>The two intermediate carry streams are OR'd together to form the full carry stream</p></td>
+<td style="width:50%"><pre><code>let Full_Adder x y z = 
+  let (s1, c1) = Half_Adder x y
+  let (s2, c2) = Half_Adder s1 z
+  (s2, OR c1 c2);;</code></pre></td>
+				</tr>			
+				</table>
+				</section>
+				<section class="conceptual" data-background-image="./assets/concept.svg"><h3>Concept</h3>
+<div><ul><li>The “=“ is mathematical – the left hand side is that thing which satisfies the equation</li>
+<li>Binds a value to a name</li>
+<li>The LHS is a limited pattern match; a tuple RHS can be equated to a tuple LHS – a “destructuring” binding.</li>
+<li>Use “_” for a “don’t care value here too!</li></ul></div>
+				</section>
+				<section><h3>Exercise 1.2</h3>
+<p>Write <code>Full_Adder</code> as a pattern match operation, without any auxiliary half-adder function</p></section>
+				<section data-background-image="./assets/background3.jpg">
+				<div class="background3"><h3>Some Basic Tools</h3></div></section>
+				<section><h3>Lists and Streams</h3>
+				<p>Basic functional concepts</p>
+				<table><tr>
+					<td class="middle50"><ul><li>A well typed list is a sequence of values 
+						where all the values are of the same type,say, <code>'a</code>.
+						 This is an <code>'a list</code> e.g. <code>Bit list</code></li>
+<li>A list is either empty or it is a pair of values composed of a value of type 
+	<code>'a</code> and an <code>'a list</code.</li></td>
+<td class="middle50"><pre><code>(* introduce the built in type of lists: 
+	this is both recursive and polymorphic *)
+
+// type 'a list =   []
+//                | (::) of 'a * 'a list</code></pre></td>
+				</tr></table>
+				</section>
+				<section class="conceptual" data-background-image="./assets/concept.svg"><h3>Concept</h3>
+<div><ul><li>“//” introduces a comment for the rest of the line</li>
+<li>“(*” and “*)” indicate a block comment</li>
+<li>This “definition” of list is descriptive only</li>
+<li>“::” is the function (operator) that prepends an item to a list</li>
+<li>Infix operators are just functions with special syntax</li></ul></div>
+				</section>
+				<section><h3>Structural Recursion</h3>
+				<p>Define a function by what it must do on each clause of the type definition</p>
+				<table><tr>
+					<td class="middle50"><ul><li>The length of an empty list is 0</li>
+<li>The length of a non-empty list is 1 + the length of the rest of the list</li></td>
+<td class="middle50"><pre><code>let rec length l =
+   match l with
+   | [] -> 0
+   | (x::xs) -> 1 + (length xs);;</code></pre></td>
+				</tr></table>
+				</section>
+				<section class="conceptual" data-background-image="./assets/concept.svg"><h3>Concept</h3>
+<div><ul><li>“<code>rec</code>” defines a recursive function</li>
+<li>It simply means that the function's name is visible inside its own body</li>
+<li>To avoid the need for mutable counters or flags, recursion replaces loops for iterative operations.</li></ul></div>
+				</section>
+				<section><h3>More Structural Recursion</h3>
+				<table><tr>
+					<td class="middle50"><pre><code>let rec append l1 l2 =
+  match l1 with
+  | [] -> l2
+  | (x::xs) -> x::(append xs l2);;</code></pre>
+<img src="./assets/Reverse.png" />
+</td>
+<td  class="middle50">
+	<img src="./assets/Append.png" />
+	
+	<pre><code>(* simple and inefficient reverse 
+by structural recursion*)‏
+let rec rev l =
+  match l with
+  | [] -> []
+  | (x::xs) -> append (rev xs) [x];;</code></pre></td>
+				</tr></table></section>
+				<section><h3>Higher-order functions</h3>
+				<p>Functions as values</p>
+				<ul><li><pre><code>let twice f x = f (f x);;</code></pre></br>
+				<ul><li><code>f</code> is a function</li>
+				<li>Parentheses group the sub-expression, making the order of evaluation explicit</li></ul></li>
+                <li><pre><code>(fun x -> x * x)</code></pre></br>
+				<ul><li>Lambda expression (free-standing anonymous function) to compute a square</li>
+				<li>Implicitly of type <code>int -> int</code></li></ul>
+				<li><pre><code>(fun x -> x * x) 4;;</code></pre></br>
+				<ul><li> → 16</li></ul>
+				<li><pre><code>twice (fun x -> x * x) 4;;</code></pre></br>
+				<ul><li> → 256</li></ul>
+				</ul>
+				</section>
+				<section class="conceptual" data-background-image="./assets/concept.svg"><h3>Concept</h3>
+<div><ul><li>F# defines these very useful higher-order functions as infix operators
+<pre><code>let (|>) f x = f x
+let (>>) f g x = f(g x)</code></pre></li>
+<li>So we can write
+<pre><code>let twice f x = f |> f x;;</code></pre>
+or
+<pre><code>let twice f = f >> f;;</code></pre></li>
+<li><code>|></code> is F#'s answer to fluent syntax</li></ul></div>
+				</section>
+				<section><h3>Generalising</h3>
+<p>We can build upon the pieces</p>
+<pre><code>let rec power f n x =
+  if n <= 0
+    then x
+    else power f (n – 1) (f x);;</code></pre></section>
+
+				<section><h3>Map/Reduce</h3>
+				<ul>
+					<li>Apply a function to each element of a list, giving a new list
+						<pre><code>let rec map f l =
+  match l with
+  |[] -> []
+  |(x::xs) -> (f x)::(map f xs);;</code></pre>
+					</li>
+					<li>Accumulate over a list
+						<pre><code>let rec reduce f c l =
+  match l with
+  |[] -> c
+  |(x::xs) -> f x (reduce f c xs);;</code></pre>
+  = f(x<sub>1</sub>, f(x<sub>2</sub>, … f(x<sub>n</sub>,c) … ))</li>
+					<li>Another definition of length
+						<pre><code>let len l = reduce ( + ) 0 (map (fun x -> 1) l);;</code></pre>
+</li></ul>
+				</section>
+				<section class="conceptual" data-background-image="./assets/concept.svg"><h3>Concept</h3>
+<div><ul><li>In the expression 
+<pre><code>let len l = reduce ( + ) 0 (map (fun x -> 1) l);;</code></pre>
+the infix operator “plus” is named in parentheses</li>
+<li>This is the same as in the declaration of an infix operator function</li>
+<li>! % &amp; * + - . / &lt; = &gt; ? @ ^ | and ~ are allowed in user-defined (infix operator) function names</li></ul></div>
+				</section>
+				<section><h3>Exercise 1.3</h3>
+<ul>
+	<li>Define the function zip which when given two lists of the same length and returns a single list of pairs<br>
+		<code>zip [1;2;3] [Zero; One; Zero] → [(1,Zero); (2,One); (3,Zero)]</code>
+	</li>
+	<li>Define <code>itlist</code> which takes a function f, an initial value v, and a non-negative
+	 integer n and returns a list of the iterates of f on v<br/>
+<code>itlist f v n → [v; f v; f(f v); f(f(f v))); ....; f<sup>n</sup> v]</code></li>
+	<li>Define <code>R_reduce f l c → f(x<sub>n</sub>...f(x<sub>2</sub>, f(x<sub>1</sub>, c)))</code></li>
+</ul>
+</section>
+				<section data-background-image="./assets/background3.jpg">
+				<div class="background3">
+				<h3>The Adder</h3>
+				</div></section>
+				<section><h3>The Adder</h3>
+				<table><tr>
+					<td class="middle50">
+<img src="./assets/TheAdder.png" />
+</td>
+<td class="middle50">
+	<pre><code>let rec R_Adder bl1 bl2 c =
+  match (bl1, bl2) with
+  | ([],[]) -> []
+  | (x::xs, y::ys) -> 
+      let (out, carry) = (Full_Adder x y c)
+      out::(R_Adder xs ys carry)
+  | _ -> [];;</code></pre>
+  <p><b>Note</b> the lists are assumed to be in Least Significant Bit first order</p></td>
+				</tr></table></section>
+				<section><h3>Tidying Up</h3>
+				<table><tr>
+					<td class="middle40">
+<ul>
+<li>The numbers may not be the same length<br/>
+<ul><li>Drop leading zeroes</li>
+<li>Pad to matching length</li></ul></li>
+<li>We read numbers Most Significant Bit first<br/>
+<ul><li>Reverse lists before and after addition</li>
+<li>We already defined reverse above</li></ul></li>
+</ul>
+</td>
+<td class="middle60">
+	<pre><code>let rec dropleadingzeros l =
+  match l with
+  | [] -> []
+  | (Zero::xs) -> dropleadingzeros xs
+  | x -> x;;
+
+// add n leading Zero's 
+let rec padby n l = if n <= 0 
+  then l 
+  else padby (n-1) (Zero::l);;
+
+// pad two lists to the same length
+let rec pad (l1, l2) = 
+  let len1 = length l1
+  let len2 = length l2
+  if (len1 = len2) then (l1,l2)
+  else if (len1 < len2) then (padby (len2-len1) l1, l2)
+       else (l1, padby  (len1-len2) l2);;</code></pre></td>
+				</tr></table></section>
+				<section><h3>Putting It All Together</h3>
+				<pre><code>let Adder bl1 bl2 =
+  let (l1,l2) = pad ((dropleadingzeros bl1), (dropleadingzeros bl2))
+  reverse(R_Adder (reverse (Zero::l1)) (reverse (Zero::l2)) Zero);;</code></pre>
+				</section>
+				<section><h3>Generalising : the Synchronous State Machine</h3>
+				<table ><tr>
+					<td class="middle30">
+<img src="./assets/SynchStateMachine.png" />
+</td>
+<td class="middle70">
+	<pre><code>let rec Mach f s l =
+  match l with
+  | [] -> []
+  | (x::xs) -> 
+    let (out, state) = (f x s)
+    out::(Mach f state xs);;
+let X_R_Adder bl1 bl2 c = 
+   let UC_Full_Adder (a,b) c = Full_Adder a b c
+   Mach UC_Full_Adder Zero (zip bl1 bl2);;
+let PAdder bl1 bl2 =
+  let (l1,l2) = pad ((dropleadingzeros bl1), (dropleadingzeros bl2))
+  rev(X_R_Adder (rev (Zero::l1)) (rev (Zero::l2)));;</code></pre></td>
+				</tr></table></section>
+
+
+				<section><h1 class="highlight">Wrapping up</h1>
+				<ul><li>Q&amp;A</li><li><p><a href="./F%23 1 Introduction.fsx">The collected code from the slides</p></a></li></ul></section>
+				<section data-background-image="./assets/background1.jpg">
+				<h1 class="endtitle">つづく</h1></section>
+			</div>
+		</div>
+
+		<script src="../reveal.js/lib/js/head.min.js"></script>
+		<script src="../reveal.js/js/reveal.js"></script>
+
+		<script>
+			// More info https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				history: true,
+
+				// More info https://github.com/hakimel/reveal.js#dependencies
+				dependencies: [
+					{ src: '../reveal.js/plugin/markdown/marked.js' },
+					{ src: '../reveal.js/plugin/markdown/markdown.js' },
+					{ src: '../reveal.js/plugin/notes/notes.js', async: true },
+					{ src: '../reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+		</script>
+	</body>
+</html>
