@@ -1,0 +1,577 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Functional Programming in F# : Part II &#x2014; Lexers &amp; Parsers</title>
+
+		<link rel="stylesheet" href="../reveal.js/css/reveal.css">
+		<link rel="stylesheet" href="../reveal.js/css/theme/simple.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="../reveal.js/lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../reveal.js/css/print/pdf.css' : '../reveal.js/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+		<link rel="stylesheet" href="./assets/decoration.css">		
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides overrides">
+				<section  data-background-image="./assets/background1.jpg">
+					<div class="background1">
+					<h1>Functional Programming in F#</h1>
+					<h2>Part II &#x2014; Lexers &amp; Parsers</h2>
+<p><b>Steven Gilham</b></p>
+<!-- p>Principal Software Engineer</p -->
+<p><i>Based on material developed in collaboration with Will Harwood and Laurence Jordan and presented in 2008</i></p>
+					</div>
+				</section>
+				<section>
+					<table><tr>
+					<td class="middle30">
+				    <img src="./assets/fsharp256.png" />
+					</td>
+					<td>
+					<h3>Course Overview</h3>
+				<ul><li>Introduction to Functional Programming via Circuits</li>
+<li>Lexing and Parsing<br>
+<ul><li><span class="highlight">Today's presentation</span></li></ul></li>
+<li>Interpreters</li>
+<li>Distributed and Concurrent Programming</li>
+<li>Advanced topics<br>
+<ul><li>Continuations, monads &amp; computations, etc.</li></ul></li>
+<li>Non-functional bits<br>
+<ul><li>Assignment, Objects, Exceptions, Libraries, .net, type providers etc.</li></ul></li></ul>
+					</td></tr></table>
+				</section>
+				<section data-background-image="./assets/background2.jpg">
+					<div class="background2">
+					<h3>Lexing and Parsing</h3>
+<p><b>A standard application of the techniques</b></p>
+					</div>
+				</section>
+				<section>
+					<table><tr>
+					<td style="vertical-align: middle;width: 30%;">
+				    <img src="./assets/fsharp256.png" />
+					</td>
+					<td>
+					<h3>Lexers and Parsers</h3>
+				<ul><li>A simple language<br>
+<ul><li>and its syntax</li></ul></li>
+<li>Lexing</li>
+<li>Parsing</li>
+<li>Transforms</li>
+<ul><li>And generating syntax trees</li></ul></li>
+</ul>
+					</td></tr></table>
+				</section>
+				<section data-background-image="./assets/background3.jpg">
+				<div class="background3"><h3>A Simple Language – LISP</h3></div>
+				</section>
+				<section><h3>Syntax</h3>
+<p><span class="highlight">NOT</span> a LISP course in your FP course!</p>
+<p>Expressions are of the form</p>
+<pre><code>(mult (add x 5) factor)
+(bind ((x. 1) (y . 2) (z . 3)) (add x y z)) 
+(defun append (x y) 
+        (if (null x) y 
+             (cons (head x) (append (tail x) y))))</code></pre>
+				</section>
+				<section><h3>Lexer</h3>
+				<p>Lexer takes character data and presents a stream of tokens</p>
+<img src="./assets/Lexer.png">
+				</section>
+				<section><h3>Parser</h3>
+				<p>Parser takes the token stream and creates a syntax tree</p>
+<img src="./assets/Parser.png">
+				</section>
+				<section data-background-image="./assets/background3.jpg">
+				<div class="background3"><h3>Lexers</h3></div>
+				</section>
+				<section><h3>Basic Lexer</h3>
+				<p>A state machine</p>
+<img src="./assets/Lexer2.png">
+				</section>				
+				<section><h3>String to character list</h3>
+				<p>"abcde" -> [ 'a'; 'b'; 'c'; 'd'; 'e' ]</p>
+			
+				<table><tr>
+					<td class="middle30"><pre style="box-shadow: none">"abcde"
+[ 'a' ] "bcde"
+[ 'a'; 'b' ] "cde"
+ ...
+[ 'a'; 'b'; 'c'; 'd'; 'e' ] ""</pre>
+					</td>
+<td class="fragment middle70"><pre><code>let rec toList (i : string) = 
+    if i.Length > 0 
+      then ((i.Chars(0))::(toList (i.Substring(1))))
+      else [];;</code></pre></td>
+				</tr></table>
+				</section>
+				<section class="conceptual" data-background-image="./assets/Concept.svg">					
+				<h3>Concept</h3>
+				<div>
+<p>If we had written</p>
+<pre><code>let rec toList i = … </code></pre></li>
+<p>we would get the following from e.g <code>i.Length</code></p>
+<p><code>Lookup on object of indeterminate type based on information prior to this program point. 
+	A type annotation may be needed prior to this program point to constrain the type of the object. 
+	This may allow the lookup to be resolved.</code></p>
+<p> = The type of <code>i</code> cannot be inferred.</p>
+</div>
+				</section>
+				<section data-background-image="./assets/Aside.svg">
+				<h3>Digression – Set-up for exercises</h3>
+<p>We are, in this lecture, working from first principles throughout, rather than going to library code &#x2014; the 
+	availability of mature facilities such as fslex/fsyacc or FParsec would reduce this example into just
+	 the incantations to initialise those.</p>
+<p>This <code>toList</code> implementation is intended as a reminder of the technique used,
+	 without diverting into implementation detail. We can see that the repeated
+	  creation of temporary strings, for example, would be a potential performance
+	   issue in practice. Indeed, what one might write in practice would be more like</p>
+<pre><code>let toList s = (s :> char seq) |> Seq.toList;;</code></pre>
+<p>but objects and modules come later in the series.</p>				
+				</section>
+
+
+				<section><h3>Lexical classes</h3>
+				<pre><code>type lexical = BRA | KET | DOT | SYMATOM of char list | NUMATOM of int ;;</code></pre>
+				<table><tr>
+					<td class="middle50"><ul><li>Separators are '(', ')' '.' and whitespace<br>
+<ul><li>Called stop cases in the code.</li></ul></li></td>
+<td class="middle50"><pre><code>let stopcases = toList "().\n\t " ;;</code></pre></td>
+				</tr></table>
+				</section>
+				<section class="conceptual" data-background-image="./assets/Concept.svg">					
+				<h3>Recall</h3>
+				<div>
+				<p>An Algebraic Data Type</p>
+<ul><li><code>enum</code> on steroids</li>
+<li>Can have many values</li>
+<li>Can associate data</li>
+<li>Are a type (with closed set of sub-types)</li>
+<li>Avoid the <a href="http://wiki.c2.com/?PrimitiveObsession">Primitive Obsession anti-pattern</a></li></ul></div>
+				</section>
+				<section><h3>Predicates</h3>
+				<p>Test what we have found</p>
+				<table width="100%"><tr>
+					<td class="middle40">Is Member of List?</td>
+<td class="middle60"><pre><code>let rec mem x l = 
+  match l with
+  | [] -> false
+  | (y::ys) -> if x = y 
+                 then true 
+                 else mem x ys ;;</code></pre></td>
+				</tr>
+<tr>
+					<td class="middle40">Is Stopcase?</td>
+<td class="middle60"><pre><code>let stopcase x =  mem x stopcases ;;</code></pre></td>
+				</tr><tr>
+					<td class="middle40">Define digits</td>
+<td class="middle60"><pre><code>let digits = toList "1234567890" ;;</code></pre></td>
+				</tr><tr>
+					<td class="middle40">Is Digit?</td>
+<td class="middle60"><pre><code>let digit x = mem  x digits ;;</code></pre></td>
+				</tr><tr>
+					<td class="middle40">Is Alpha?</td>
+<td class="middle60"><pre><code>let alpha x = not(mem  x  (digits @ stopcases)) ;;</code></pre></td>
+				</tr>
+				</table>
+				</section>
+				<section><h3>Character list to integer</h3>
+				<table width="100%">
+					<tr><th style="border-bottom: none"><p>char → int</p></th><th style="border-bottom: none"><p>char list → int</p></th></tr>
+					<tr>
+					<td class="middle30">
+						
+<pre><code>let digitToint i = 
+   match i with
+   | '0' -> 0
+   | '1' -> 1
+   | '2' -> 2
+   | '3' -> 3
+   | '4' -> 4
+   | '5' -> 5
+   | '6' -> 6
+   | '7' -> 7
+   | '8' -> 8
+   | '9' -> 9
+   | _ -> 0 ;;</code></pre>
+					</td>
+<td class="middle70"><pre><code>let mkint s =
+ let rec mkint' s a =
+   match s with 
+   |[] -> a
+   | (x::xs) ->  mkint' xs ((a*10) + (digitToint x))
+ mkint' s 0;;</code></pre></td>
+				</tr></table>
+				</section>
+				<section><h3>Component Lexers</h3>
+				<table width="100%"><tr>
+					<td class="middle40">Symbol lexer</td>
+<td class="middle60"><pre><code>let rec lexSym s l =
+  match l with 
+  |  [] -> (SYMATOM s, [])
+  | (x::xs) -> if stopcase x 
+               then (SYMATOM s, x::xs) 
+               else lexSym (s@[x]) xs ;;</code></pre></td>
+				</tr>
+<tr>
+					<td class="middle40">Number or Symbol</td>
+<td class="middle60"><pre><code>let rec lexNumOrSym s l =
+ match l with
+    |[]-> (NUMATOM(mkint s), []) 
+    |(x::xs) -> 
+        (if (stopcase x) then ( NUMATOM(mkint s), x::xs)
+        else if (alpha x) then lexSym (s@[x]) xs
+        else lexNumOrSym  (s@[x]) xs ) ;;</code></pre></td>
+				</tr>
+				</table>
+				</section>
+				<section><h3>The Complete Lexer</h3>
+				<p>Assembling the pieces</p>
+				<table width="100%"><tr>
+					<td class="middle40"><ul>
+						<li>Skip whitespace</li>
+						<li>'(', ')' and '.' go to the corresponding token</li>
+						<li>Symbols and numbers as above</li>
+						</ul></td>
+<td class="middle60"><pre><code>let rec lexer l = 
+  match l with
+  | []       -> []
+  | '\n'::xs -> lexer xs
+  | ' '::xs  -> lexer xs
+  | '\t'::xs -> lexer xs
+  | '('::xs  -> BRA::(lexer xs)
+  | ')'::xs  -> KET::(lexer xs)
+  | '.'::xs  -> DOT::(lexer xs)
+  | x::xs    -> 
+    let (l,r) = if alpha x 
+                then (lexSym [x]  xs)
+                else (lexNumOrSym [x] xs)
+    l :: lexer r;;</code></pre></td>
+				</tr>
+				</table>
+				</section>
+				<section><h3>Exercise 2.1</h3>
+<p>Write a lexer for <code>.ica</code>/<code>.ini</code> files (see also <a href="#Ex23b">Exercise 2.3 below</a>)</p></section>
+				<section data-background-image="./assets/background3.jpg">
+				<div class="background3"><h3>Parsers</h3></div>
+				</section>
+				<section><h3>The Language</h3>
+				<p>Define the grammar it obeys</p>
+				<ul><li><code>SEXPR = ATOM | BRA SEXPR DOT SEXPR KET | BRA SEXPR* KET</code></li>
+<li><code>ATOM = SYMBOL | NUMBER</code></li>
+<li>→ <code class="highlight">SEXPR = SYMBOL | NUMBER | ( SEXPR . SEXPR ) | ( SEXPR* )</code></li>
+</ul>
+				</section>
+				<section><h3>Our Approach</h3>
+				<p>Translate the grammar directly into a program by </p>
+<ul><li>Creating elementary parsers for bra, ket, dot, symbols, atoms etc.</li>
+<li>Combining by sequence '>>', alternation '||' and iteration 'ITERATE'</li>
+</ul>
+<pre><code>let parseAtom  s = ((parseSym >* ATOMACTION) ||  (parseNum >* ATOMACTION)) s ;;
+
+let rec parseSEXPR s = 
+  (parseAtom ||   
+   (bra >> parseSEXPR >> dot >> parseSEXPR >> ket >* CONSPAIR) ||
+   (bra >>  (ITERATE parseSEXPR) >* CONSLIST >> ket)
+  ) s;;</code></pre>
+				</section>
+				<section class="conceptual" data-background-image="./assets/Concept.svg"><h3>Concept</h3>
+				<div>
+<ul><li>Code references go up the file (bottom up)</li>
+<li>Grammars can reference down the file (top down)</li></ul></div>
+				</section>
+				<section class="conceptual" data-background-image="./assets/Concept.svg"><h3>Concept</h3>
+				<div>
+<ul><li>A parse state is the input yet to be parsed plus the results so far</li>
+<li>A parser takes a parse state, works on the input, and returns an updated state or a failure</li></ul></div>
+				</section>
+				<section><h3>Basic Parsers</h3>
+				<table width="100%"><tr>
+					<td class="middle40">Capture the concept of success or failure</td>
+<td class="middle60"><pre><code>type 'a Maybe = Return of 'a | Fail;;</code></pre></td>
+				</tr>
+<tr>
+					<td class="middle40">A simple parser that takes a list of lexed items and either returns a new parse state or fails</td>
+<td class="middle60"><pre><code>let parseSym  s =
+ match s with
+ | Return((SYMATOM y)::ys, (_)) ->
+       Return(ys,[SYMATOM y]) 
+ | _ ->  Fail ;;
+</code></pre></td>
+				</tr>
+<tr>
+					<td class="middle40">Example (mult 1 2) where '(' has been read...</td>
+<td class="middle60"><pre><code>( [SYMATOM mult ; NUMATOM 1; NUMATOM 2; KET] , ANYTHING) →
+  (  [NUMATOM 1; NUMATOM 2]; KET , [SYMATOM mult])</code></pre></td>
+				</tr>								
+				</table>
+				</section>
+				<section class="conceptual" data-background-image="./assets/Concept.svg"><h3>Concept</h3>
+				<div>
+<ul><li><code>Maybe</code> is a standard pattern</li>
+<li>Corresponds to the OO "null object" pattern</li>
+<li>So, no <code>null</code> or need for <code>null</code></li>
+<li>Generalises e.g. Haskell-style 
+<pre><code>type Either = Left of 'error
+	      | Right of 'result</code></pre></li>
+<li>This is <b>Separation of Concerns</b>, FP style</li></ul></div>
+				</section>
+				<section><h3>Basic Parsers, continued</h3>
+				<table width="100%"><tr>
+					<td class="middle40">Again, but for numbers</td>
+<td class="middle60"><pre><code>let parseNum  s =
+ match s with
+ | Return((NUMATOM y)::ys, a) ->  Return(ys,[NUMATOM y]) 
+ | (_) ->  Fail ;;</code></pre></td>
+				</tr>
+<tr>
+					<td class="middle40">Helper function for constants – a higher order parser that takes the token to match as a parameter</td>
+<td class="middle60"><pre><code>let parseConst x s =
+  match s with 
+  | Return(y::ys, a) -> if x = y then Return(ys, []) else Fail 
+  | _ ->  Fail ;;</code></pre></td>
+				</tr>
+<tr>
+					<td class="middle40">Parsers for the lexical constants BRA, KET and DOT.</td>
+<td class="middle60"><pre><code>let bra x = parseConst BRA x;;
+
+let ket x = parseConst KET x;;
+
+let dot x = parseConst DOT x;;</code></pre></td>
+				</tr>								
+				</table>
+				</section>
+				<section class="conceptual" data-background-image="./assets/Concept.svg"><h3>Concept</h3>
+				<div>
+					<p>Partial function application</p>
+<pre><code>val parseConst :
+  x:'a -> s:('a list * 'b) Maybe -> ('a list * 'c list) Maybe
+    when 'a : equality</code></pre>
+	<p>leads to</p>
+	<pre><code>val bra : x:(lexical list * 'a) Maybe -> 
+		(lexical list * 'b list) Maybe</code></pre>			
+</div>
+				</section>
+				<section><h3>Combining Parser Primitives &#x2014; Alternation</h3>
+				<p>"Either X or Y"</p>
+				<table width="100%"><tr>
+					<td class="middle30">Try <code>f</code>.  If it fails, try <code>g</code></td>
+<td class="middle70"><pre><code>let OTHERWISE f g  x =
+  let result = f x
+  if result = Fail then (g x) else result ;;</code></pre></td>
+				</tr>
+<tr>
+					<td class="middle30">Make it an infix</td>
+<td class="middle70"><pre><code>let (||) = OTHERWISE;;</code></pre></td>
+				</tr>								
+				</table>
+				</section>
+				<section><h3>Combining Parser Primitives &#x2014; Sequence</h3>
+				<p>"After X then Y"</p>
+				<table width="100%"><tr>
+					<td class="middle40">Try <code>f</code>.  If it fails, the parse fails.<br/>
+If it succeeds, try <code>g</code> on the new parse state; if that fails, the parse fails.</td>
+<td class="middle60"><pre><code>let THENDO  f g x =
+  let u = f x
+  match u with
+  | Return(rest1, result1) 
+               -> let v = g u
+                  match v with
+                  | Return(rest2, result2) -> 
+                    Return(rest2, result1 @ result2)
+                  | Fail-> Fail
+  | Fail -> Fail ;;</code></pre></td>
+				</tr>
+<tr>
+					<td class="middle40">Make it an infix</td>
+<td class="middle60"><pre><code>let (>>) = THENDO;;</code></pre></td>
+				</tr>								
+				</table>
+				</section>
+				<section><h3>Combining Parser Primitives &#x2014; Iteration</h3>
+				<p>"As many X as are available"</p>
+				<table width="100%"><tr>
+					<td class="middle40">Try <code>f</code>.  If it fails, the parse is a no-op.<br/>
+If it succeeds, recurse on the new parse state.</td>
+<td class="middle60"><pre><code>let rec ITERATE f x = 
+  let u = f x
+  match u with 
+  | Fail -> x
+  | Return(rest2, result2) -> 
+           match x with
+           | Fail -> Fail
+           | Return(rest1, result1) -> 
+               ITERATE f (Return(rest2, result1 @ result2));;</code></pre></td>
+				</tr>
+<tr>
+					<td class="middle40">Not an infix</td>
+<td class="middle60">&nbsp;</td>
+				</tr>								
+				</table>
+				</section>
+				<section><h3>Exercise 2.2</h3>
+<p>Write the operator OPT such that OPT A matches zero or one occurrence of the parser A</p>
+<p>Write the parser PLUS such that PLUS A matches one or more occurrences of A</p></section>
+				<section data-background-image="./assets/background3.jpg">
+				<div class="background3"><h3>Transforms</h3></div></section>
+				<section><h3>Transforms</h3>
+<p>This builds the syntax tree</p>
+<p>The parsers only check the structure of the expression </p>
+<p>We also want them to build an abstract structure corresponding to the string!</p>
+<pre><code>SEXPR = ATOM → ATOM-ACTION |
+        BRA SEXPR DOT SEXPR KET → PAIR-ACTION |
+        BRA SEXPR* KET → LIST-ACTION
+ATOM = SYMBOL → SYMBOL-ACTION |
+       NUMBER → NUMBER-ACTION</code></pre>
+<p>Transforms take a parse state and build a parse state of a different type</p>
+<pre><code>(unparsed input, parse items list) -> (unparsed input, LISP Tree list)</code></pre>
+<p>LISP trees are built from ATOM, NIL and CONS elements</p></section>
+				<section><h3>Our Abstract Syntax Tree</h3>
+<img src="./assets/AST.png">
+<pre><code>type SEXPR = SYMBOL of char list | NUMBER of int | NIL | CONS of SEXPR * SEXPR ;;</code></pre>
+</section>
+				<section><h3>Transforms continued</h3>
+				<table width="100%"><tr>
+					<td class="middle40">Parse input using <code>f</code>,
+					 then transform according to <code>h</code>.</td>
+<td class="middle60"><pre><code>let TRANSFORM f h s =
+  let u = f s
+  match u with
+  | Return(rest, result) 
+               ->  Return(rest, h result)
+  | Fail -> Fail ;;</code></pre></td>
+				</tr>
+<tr>
+					<td class="middle40">Make it an infix</td>
+<td class="middle60"><pre><code>let (>*) = TRANSFORM;;</code></pre></td>
+				</tr>								
+				</table>
+				</section>
+				<section><h3>Grammar with Actions : A refinement</h3>
+<p>The representation we seek is</p>
+<pre><code>SEXPR = ATOM |
+        BRA SEXPR DOT SEXPR KET → CONSPAIR |
+        BRA SEXPR* → CONSLIST KET
+ATOM = SYMBOL → ATOM-ACTION |
+       NUMBER → ATOM-ACTION</code></pre></section>
+				<section><h3>Actions : From grammar to code</h3>
+				<table width="100%"><tr>
+					<td class="middle40">CONSPAIR – produce a singleton list containing the CONS of the items.</td>
+<td class="middle60"><pre><code>let CONSPAIR [ x; y ] = [CONS(x,y)];;</code></pre></td>
+				</tr>
+<tr>
+					<td class="middle40">CONSLIST – produce a CONS representing a list</td>
+<td class="middle60"><pre><code>let CONSLIST l =
+ let rec conslist y =
+   match y with
+   | x::xs -> CONS(x, conslist xs)
+   | [] -> NIL 
+ [conslist l];;</code></pre></td>
+				</tr>								
+<tr>
+					<td class="middle40">ATOMACTION – translate base cases between data types</td>
+<td class="middle60"><pre><code>let ATOMACTION v  =
+  match v with
+  | [SYMATOM u] ->  [SYMBOL u] 
+  | [NUMATOM i] ->  [NUMBER i]
+  | _ ->  [];;</code></pre></td>
+				</tr>								
+				</table>
+				</section>
+				<section><h3>The Complete Parser</h3>
+<p>Recapitulating</p>
+<pre><code>let parseAtom  s = ((parseSym >* ATOMACTION) ||  (parseNum >* ATOMACTION)) s ;;
+
+let rec parseSEXPR s = 
+  (parseAtom ||   
+   (bra >> parseSEXPR >> dot >> parseSEXPR >> ket >* CONSPAIR) ||
+   (bra >>  (ITERATE parseSEXPR) >* CONSLIST >> ket)
+  ) s;;</code></pre></section>
+
+				<section><h3>Wrapping the Parser</h3>
+<p>Building a usable API</p>
+<pre><code>let parse str = 
+  let r = parseSEXPR (Return (lexer (toList str), [])) 
+  match r with 
+  | Return(_ , result::_) -> result
+  | Return(_, []) -> NIL
+  | Fail -> NIL ;;</code></pre>
+  <p>Test Case</p>
+  <pre><code>parse "( ((ABC)) . (123. 456))";;</code></pre>
+  <p>Result</p>
+  <pre><code>val it : SEXPR =
+  CONS
+    (CONS (CONS (SYMBOL ['A'; 'B'; 'C'],NIL),NIL),CONS (NUMBER 123,NUMBER 456))</code></pre></section>
+
+				<section><h3 id="Ex23b">Exercise 2.3a</h3>
+<p>Define a grammar</p>
+<pre>File = Line*
+
+Line = WHITESPACE | CMD | 'NL'
+
+WHITESPACE = ('NL' | 'TAB' | 'SPACE' )
+
+CMD = SectionHeader | BINDING | COMMENT
+
+SectionHeader = '[' HeaderString ']'
+
+BINDING = BindString '=' BindString
+
+HeaderString = Any but ('[' | ']' | 'NL')
+
+BindString = Quote | Any but ('='| 'NL' )
+
+Quote = '"' (Anything but '"') '"'
+
+COMMENT = ';' (Any but 'NL') 'NL'</pre>
+</section>
+
+
+
+
+
+				<section><h3 id="Ex23b">Exercise 2.3b</h3>
+<p>Write a Lexer for the grammar</p>
+<p>Write a Parser for it</p>
+<p>Extend it, using <a href="https://infogalactic.com/info/INI_file">the full INI file format definition</a>.</p>
+<p>What real-world performance implications are there in the use of this sort of parser? 
+	Re-implement one of the parsers to avoid the limitations of the strictly evaluated list datatype.</p>
+</section>
+				<section><h1 class="highlight">Wrapping up</h1>
+				<ul><li>Q&amp;A</li><li><p><a href="./F%23 2 Lexers and Parsers.fsx">The collected code from the slides</p></a></li></ul></section>
+				<section data-background-image="./assets/background1.jpg">
+				<h1 class="endtitle">つづく</h1></section>
+			</div>
+		</div>
+
+		<script src="../reveal.js/lib/js/head.min.js"></script>
+		<script src="../reveal.js/js/reveal.js"></script>
+
+		<script>
+			// More info https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				history: true,
+
+				// More info https://github.com/hakimel/reveal.js#dependencies
+				dependencies: [
+					{ src: '../reveal.js/plugin/markdown/marked.js' },
+					{ src: '../reveal.js/plugin/markdown/markdown.js' },
+					{ src: '../reveal.js/plugin/notes/notes.js', async: true },
+					{ src: '../reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+		</script>
+	</body>
+</html>
