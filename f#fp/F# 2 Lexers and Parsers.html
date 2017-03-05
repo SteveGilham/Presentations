@@ -129,6 +129,20 @@
 <p> = The type of <code>i</code> cannot be inferred.</p>
 </div>
 				</section>
+				<section data-background-image="./assets/Aside.svg">
+				<h3>Digression – Set-up for exercises</h3>
+<p>We are, in this lecture, working from first principles throughout, rather than going to library code &#x2014; the 
+	availability of mature facilities such as fslex/fsyacc or FParsec would reduce this example into just
+	 the incantations to initialise those.</p>
+<p>This <code>toList</code> implementation is intended as a reminder of the technique used,
+	 without diverting into implementation detail. We can see that the repeated
+	  creation of temporary strings, for example, would be a potential performance
+	   issue in practice. Indeed, what one might write in practice would be more like</p>
+<pre><code>let toList s = (s :> char seq) |> Seq.toList;;</code></pre>
+<p>but objects and modules come later in the series.</p>				
+				</section>
+
+
 				<section><h3>Lexical classes</h3>
 				<pre><code>type lexical = BRA | KET | DOT | SYMATOM of char list | NUMATOM of int ;;</code></pre>
 				<table><tr>
@@ -532,6 +546,8 @@ COMMENT = ';' (Any but 'NL') 'NL'</pre>
 <p>Write a Lexer for the grammar</p>
 <p>Write a Parser for it</p>
 <p>Extend it, using <a href="https://infogalactic.com/info/INI_file">the full INI file format definition</a>.</p>
+<p>What real-world performance implications are there in the use of this sort of parser? 
+	Re-implement one of the parsers to avoid the limitations of the strictly evaluated list datatype.</p>
 </section>
 				<section><h1 class="highlight">Wrapping up</h1>
 				<ul><li>Q&amp;A</li><li><p><a href="./F%23 2 Lexers and Parsers.fsx">The collected code from the slides</p></a></li></ul></section>
