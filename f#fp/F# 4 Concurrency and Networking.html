@@ -1,0 +1,341 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Functional Programming in F# : Part III &#x2014; Interpreters</title>
+
+		<link rel="stylesheet" href="../reveal.js/css/reveal.css">
+		<link rel="stylesheet" href="../reveal.js/css/theme/simple.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="../reveal.js/lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../reveal.js/css/print/pdf.css' : '../reveal.js/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+		<link rel="stylesheet" href="./assets/decoration.css">		
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides overrides">
+				<section  data-background-image="./assets/background1.jpg">
+					<div class="background1">
+					<h1>Functional Programming in F#</h1>
+					<h2>Part IV &#x2014; Distributed and Concurrent Programming</h2>
+<p><b>Steven Gilham</b></p>
+<!-- p>Principal Software Engineer</p -->
+<p><i>Based on material developed in collaboration with Will Harwood and Laurence Jordan and presented in 2008</i></p>
+					</div>
+				</section>
+				<section>
+					<table><tr>
+					<td class="middle30">
+				    <img src="./assets/fsharp256.png" />
+					</td>
+					<td>
+					<h3>Course Overview</h3>
+				<ul><li>Introduction to Functional Programming via Circuits</li>
+<li>Lexing and Parsing</li>
+<li>Interpreters</li>
+<li>Distributed and Concurrent Programming<br>
+<ul><li><span class="highlight">Today's presentation</span></li></ul></li>
+<li>Advanced topics<br>
+<ul><li>Continuations, monads &amp; computations, etc.</li></ul></li>
+<li>Non-functional bits<br>
+<ul><li>Objects, Exceptions, Libraries, .net, type providers etc.</li></ul></li></ul>
+					</td></tr></table>
+				</section>
+				<section data-background-image="./assets/background2.jpg">
+					<div class="background2">
+					<h3>Distributed and Concurrent Programming</h3>
+<p><b>Side-effects and state</b></p>
+					</div>
+				</section>
+				<section>
+					<table><tr>
+					<td style="vertical-align: middle;width: 30%;">
+				    <img src="./assets/fsharp256.png" />
+					</td>
+					<td>
+					<h3>Distributed and Concurrent Programming</h3>
+				<ul><li>State</li>
+<li>Simple Concurrency</li>
+<li>Functional Networking</li>
+</ul>
+					</td></tr></table>
+				</section>
+				<section data-background-image="./assets/background3.jpg">
+				<div class="background3"><h3>State</h3></div>
+				</section>
+				<section class="conceptual" data-background-image="./assets/Concept.svg">					
+				<h3>Concept</h3>
+					<h4>Assignment &amp; References</h4>
+	<table><tr><td><p>C# and Java variables are references &#x2014; they name a box that contains a value of a given type.  
+	F# has an explict form for this, the type <code>'a ref</code></p>
+	<pre><code>let state = ref 0;;</code></pre></td><td style="vertical-align:bottom" >
+<img src="./assets/Ref0.png" /></td></tr>
+<tr><td><p>We get the value out of the box like</p>
+<pre><code>// (!): ‘a ref -> ‘a
+!state;;</code></pre></td></tr>
+<tr><td><p>and change the value by</p>
+<pre><code>// (:=) : ‘a ref -> ‘a -> unit
+state := 1;;</code></pre></td><td style="vertical-align:bottom">
+<img src="./assets/Ref1.png" /></td></tr></table>
+				</section>
+				<section class="conceptual" data-background-image="./assets/Concept.svg">					
+				<h3>Concept</h3>
+				<div>
+					<h4><code>mutable</code>s</h4>
+<p>Values can also be declared <code>mutable</code>.</p>
+<pre><code>let mutable state' = 0;;</code></pre>	
+<p>We get the value out of the box like</p>
+<pre><code>state';;</code></pre>
+<p>and change the value by</p>
+<pre><code>state' <- 1</code></pre>
+
+</div>
+				</section>
+				<section><h3>Locally persistent state</h3>
+				<p>Encapsulation without objects</p>
+				<p>Consider the function</p>
+				<pre><code>let gen f =
+  let i = ref 0
+  fun () -> (i := !i + 1; f !i);;</code></pre>
+<p>The function <code>gen</code> produces a generator over <code>f</code>, with repeated calls yielding 1, 4, 9, 16, ...</p>
+<p>This is the first <span class="highlight">impure</span> function we've written.</p>
+				</section>
+				<section><h3>Shared references</h3>
+				<p>Given the function</p>
+				<pre><code>let hd (x::xs) = x;;
+let tl (x::xs) = xs;;</code></pre>
+<p>we can write a mutable queue as</p>
+<pre><code>let stream init =
+  let state = ref init
+  let put x = (state := (!state)@[x])
+  let get () = let r = hd !state
+               state := tl !state
+               r
+  let isEmpty () = !state = []
+  (put, get, isEmpty);;</code></pre>
+  <p>which given an initializing list, provides functions to manipulate the queue.</p>
+  </section>
+				<section><h3>Exercise 4.1</h3>
+<p>This is a na&#xEF;ve implementation &#x2014; the behaviour of <code>put</code> is linear in the number
+ of elements in the queue. Immutable queues are implemented as pairs of lists with occasional list
+  reversals leading to amortized constant time to flow an item through the queue.</p>
+  <p>Rewrite <code>stream</code> to use such an implementation.</p>
+</section>
+				<section data-background-image="./assets/background3.jpg">
+				<div class="background3"><h3>Simple Concurrency</h3></div>
+				</section>
+				<section><h3>Simple Concurrency</h3>
+<p>The problem with shared mutable state comes when multiple concurrent operations attempt to modify the state,
+ rendering its output, or worse, its actual internal state, inconsistent.</p>
+<p>It is easy to launch a function to execute on its own thread by</p>
+ <pre><code>open System.Threading;;
+let spawn f = (Thread(new ThreadStart(f))).Start();;</code></pre>
+<p>or one could use some other .net concurrency API such as <code>Task</code>.</p>
+</section>
+				<section><h3>Na&#xEF;ve remedy &#x2014; Locking</h3>
+<p>We have APIs for this</p>
+<pre><code>let getLock () = ReaderWriterLock();;
+let acquireWrite (lock:ReaderWriterLock) = lock.AcquireWriterLock(-1);;
+let releaseWrite (lock:ReaderWriterLock) = lock.ReleaseWriterLock();;
+let acquireRead (lock:ReaderWriterLock) = lock.AcquireReaderLock(-1);;
+let releaseRead (lock:ReaderWriterLock) = lock.ReleaseReaderLock();;
+let upgrade (lock:ReaderWriterLock) = lock.UpgradeToWriterLock(-1);;
+let downgrade (lock:ReaderWriterLock) cookie = lock.DowngradeFromWriterLock(cookie);;</code></pre>
+<p class="fragment">These operations block indefinitely,
+	 so prevent data races while offering the opportunity for deadlock instead.</p>
+</section>
+				<section><h3>A Concurrent Queue</h3>
+				<p>With the lock operations, we can modify our queue to use a lock to manage
+					 access to the shared state, placing a write lock around the mutations
+					  and a read lock around the other accesses:</p>
+					  <pre><code>let stream' init =
+  let state = ref init
+  let lock = getLock()
+  let put x = acquireWrite lock
+              state := (!state)@[x]
+              releaseWrite lock
+  let get () =
+    let r = ref None
+    acquireRead lock;
+    if !state = []
+        then releaseRead lock
+             !r
+        else let u = ref (upgrade lock)
+             r := Some(hd !state)
+             state := tl !state
+             downgrade lock u;
+             releaseRead lock
+             !r
+  (put, get);;</code></pre>
+  <p class="fragment">This style of code is of course not safe against exceptions
+	   that unwind the stack while a lock is being held.</p>
+</section>
+				<section class="conceptual" data-background-image="./assets/Concept.svg">					
+				<h3>Concept</h3>
+				<div><h4><code>option 'a</code></h4>
+<p>This is the standard form of the <code>Maybe</code> type from the first talk.</p>
+<p>It is defined as </p>
+<pre><code>type 'a option = None | Some of 'a;;</code></pre>
+<p>In the queue example, offering the <code>None</code> result from <code>get</code> is an atomic replacement
+ for an <code>isEmpty/get</code> call pair.</p>
+</div>
+</section>
+				<section><h3>Asynchronous Composition</h3>
+				<p>We can connect two functions, producer and consumer, by a stream thus:</p>
+				<pre><code>let ( ||> ) f g =
+ let (put,get) = stream' []
+ let rec loop1 () = put( f ())
+                    loop1 ()
+ let rec loop2 () =
+                match get() with
+                  None -> ()
+                | Some(x) -> g x 
+                             loop2 () 
+ spawn loop1
+ spawn loop2;;
+
+// for example:
+
+let pp i = printfn "a number %d" i;;
+(gen sq) ||> pp;;</code></pre>
+<p>which will run printing squares until you halt the environment.</p>
+</section>
+				<section class="conceptual" data-background-image="./assets/Concept.svg">					
+				<h3>Concept</h3>
+				<div><h4>Tail recursion</h4>
+<p>You might expect that eventually the program would crash with a stack overflow,
+	 with all the recursive calls, but it won't.</p>
+<pre><code> let rec loop1 () = put( f ())
+                    loop1 ()</code></pre>	 
+<p>Because there is no unfinished business at the point of the recursive call
+	 (i.e. the call is in tail position), a new stack frame isn't needed.</p>
+<p>In the .net framework, the compiler will emit a tailcall IL instruction at this point to guide the JIT process.</p>
+<p>But it could instead restructure the recursion as an interation (as e.g. Scala on the JVM does)</p>
+</div>
+</section>
+				<section><h3>Exercise 4.2</h3>
+<p>The list functions we introduced in the first talk, such as </p>
+<pre><code>let rec length l =
+   match l with
+   | [] -> 0
+   | (x::xs) -> 1 + (length xs);;</code></pre>
+  <p> were not tail recursive .</p>
+  <p>Rewrite them in tail recursive form.</p>
+  <p><span class="highlight">Hint:</span> use a helper function.</p>
+</section>
+				<section data-background-image="./assets/background3.jpg">
+				<div class="background3"><h3>Functional Networking</h3></div>
+				</section>
+
+
+				<section><h3>Functional Networking</h3>
+<p>We can develop this idea further with the following concepts:</p>
+<ul><li>Asynchronous composition on different computers or between different processes on the same computer.</li>
+<li>Make byte streams look like lists.</li>
+<li>Build upon the simple idea of null terminated strings as messages.</li></ul>
+<p><span class="highlight">Aside:</span> This approach is akin to that used by Erlang,
+ though this is only a very first approximation to the Erlang model.</p>
+</section>
+				<section><h3>Two Models</h3>
+<p>Depending how we make the connections, we can either model simple one-way messaging
+	 (or asynchronous messaging if each counter-party transmits on its own schedule),
+	  or request/response (or synchronous messaging).</p>
+<img src="./assets/TwoModels.png">	  
+				</section>
+
+				<section><h3>Developing the network model &#x2014; connection as stream</h3>
+				<p>Taking advantage of the .net library methods that
+					 provide a stream-oriented view on a connection, we can write helper methods</p>
+<pre><code>open System.Net.Sockets;;
+let read (s:NetworkStream) =
+    let i = s.ReadByte()
+    if i &lt; 0 then None else Some(byte i);;
+let write b (s:NetworkStream) = s.WriteByte(b);;
+let close (s:NetworkStream) = s.Close();;</code></pre>
+</section>
+				<section><h3>Developing the network model &#x2014; stream as list</h3>
+				<p>Choosing the simplest possible case</p>
+<pre><code>(* read a null terminated stream of bytes into a list *)
+let rec streamToList s =
+  let b = read s
+  match b with
+    None  -&gt; []
+  | Some(x) -&gt; if x = 0uy then [] else  x::(streamToList s);;
+(* write  a list of bytes out as a stream *)
+let rec listToStream l s =
+   match l with
+     [] -&gt; ()
+   | x::xs -&gt; (write x s; listToStream xs s);;</code></pre>
+  <div class="fragment"><p>Similarly develop string -> byte list, byte list -> string, and write</p>
+<pre><code>let writeString ns str = listToStream stringToBytes str ns;;
+let readString ns = bytesToString (streamToList ns);;</code></pre>
+<p>to read and write strings from the network.</p>
+  </div>
+</section>
+				<section><h3>Putting it all together -- An Echo Server with Client</h3>
+				<p>Request/Response on a local loop-back socket</p>
+				<pre><code>let rec echo f (sock:Socket) =
+  let csock = sock.Accept()
+  let ns = new NetworkStream(csock)
+  (spawn(fun () -> writeString ns (f (readString ns))) ; echo f sock) ;;
+
+let echoOn f portnum =
+  let sock = new Socket(addressFamily, SocketType.Stream, ProtocolType.IP)
+  sock.Bind(IPEndPoint(local_host_address, portnum));
+  sock.Listen(backlog);
+  echo f sock;;  
+
+let asynchEchoOn f portnum = spawn(fun () -> echoOn f portnum);;</code></pre>
+<p>and client</p>
+<pre><code>let converse portnum mess = 
+ let client_socket =  new Socket(addressFamily, SocketType.Stream, ProtocolType.IP)
+ client_socket.Connect(local_host_address, portnum);
+ let client_stream = new NetworkStream(client_socket)
+ writeString client_stream mess; readString client_stream;;</code></pre>
+</section>
+				<section><h3>Example</h3>
+				<img src="./assets/Request-Response.png" />
+<table width="100%">
+	<tr><td align="center"><pre><code>converse 8001 "ahoy";;</code></pre></td>
+	<td align="center"><pre><code>let pp x = (printfn "%s" x; "Echo::" + x);;
+asynchEchoOn pp 8001;;</code></pre></td></tr>
+<tr><td align="center">Returns <code>Echo::ahoy</code></td><td align="center">Prints <code>Echo::ahoy</code></td></tr></table>
+</section>
+
+				<section><h1 class="highlight">Wrapping up</h1>
+				<ul><li>Q&amp;A</li><li><p><a href="./F%23 4 Concurrency and Networking.fsx">The collected code from the slides</a> including all the missing pieces of the echo server and client.</p></li></ul></section>
+				<section data-background-image="./assets/background1.jpg">
+				<h1 class="endtitle">つづく</h1></section>
+			</div>
+		</div>
+
+		<script src="../reveal.js/lib/js/head.min.js"></script>
+		<script src="../reveal.js/js/reveal.js"></script>
+
+		<script>
+			// More info https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				history: true,
+
+				// More info https://github.com/hakimel/reveal.js#dependencies
+				dependencies: [
+					{ src: '../reveal.js/plugin/markdown/marked.js' },
+					{ src: '../reveal.js/plugin/markdown/markdown.js' },
+					{ src: '../reveal.js/plugin/notes/notes.js', async: true },
+					{ src: '../reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+		</script>
+	</body>
+</html>
