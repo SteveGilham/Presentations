@@ -4,7 +4,7 @@
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-		<title>Functional Programming in F# : Part III &#x2014; Interpreters</title>
+		<title>Functional Programming in F# : Part V &#x2014; Advanced Topics</title>
 
 		<link rel="stylesheet" href="../reveal.js/css/reveal.css">
 		<link rel="stylesheet" href="../reveal.js/css/theme/simple.css">
@@ -28,7 +28,7 @@
 				<section  data-background-image="./assets/background1.jpg">
 					<div class="background1">
 					<h1>Functional Programming in F#</h1>
-					<h2>Part III &#x2014; Interpreters</h2>
+					<h2>Part V &#x2014; Advanced Topics</h2>
 <p><b>Steven Gilham</b></p>
 <!-- p>Principal Software Engineer</p -->
 <p><i>Based on material developed in collaboration with Will Harwood and Laurence Jordan and presented in 2008</i></p>
@@ -43,98 +43,92 @@
 					<h3>Course Overview</h3>
 				<ul><li>Introduction to Functional Programming via Circuits</li>
 <li>Lexing and Parsing</li>
-<li>Interpreters<br>
-<ul><li><span class="highlight">Today's presentation</span></li></ul></li>
+<li>Interpreters</li>
 <li>Distributed and Concurrent Programming</li>
 <li>Advanced topics<br>
-<ul><li>Continuations, monads &amp; computations, etc.</li></ul></li>
+<ul><li>Continuations, monads &amp; computations, etc.</li>
+<li><span class="highlight">Today's presentation</span></li></ul></li>
 <li>Non-functional bits<br>
 <ul><li>Objects, Exceptions, Libraries, .net, type providers etc.</li></ul></li></ul>
 					</td></tr></table>
 				</section>
 				<section data-background-image="./assets/background2.jpg">
 					<div class="background2">
-					<h3>Interpreters</h3>
-<p><b>A LISP evaluator</b></p>
+					<h3>Continuations, monads &amp; computations</h3>
+<p><b>Applications of FP concepts</b></p>
 					</div>
 				</section>
-				<section><h3>A LISP evaluator</h3>
-				<p>A simple language</p>
-				<table width="100%">
-					<tr>
-					<td class="middle40"><code>Expr =</code>
-						<pre style="box-shadow: none;background-color: DeepSkyBlue">    // Special Forms
-    (LET list_of_dotted_pairs EXPR) |
-    (IF EXPR EXPR EXPR) |
-    (LAMBDA list_of_variables EXPR) |
-    (REC variable list_of_variables EXPR) |
-    (QUOTE EXPR) |
-    (EVAL EXPR) |
-    (EVAL EXPR environment_expression) |</pre>
-					</td>
-<td class="middle60"><p>Examples</p><pre><code>(Let ((x . 1) (y. 2)) (Add x y))
-(IF (EQ x y) x (CONS x y))
-(LAMBDA (x y) (ADD x y 1))
-(REC F (N) (IF (EQ x 0) 1 (MULT N (F (SUB N 1)))))
-(QUOTE (1 2 3))
-(EVAL (QUOTE (ADD 1 2)))
-(EVAL (QUOTE (ADD X 1)) (QUOTE ((X . 2))))</code></pre></td>
-				</tr><tr>
-					<td class="middle40"><pre style="box-shadow: none;background-color: Goldenrod">    // Call by Value
-    (EXPR EXPR*) |
-    SYMBOL |
-    NUMBER</pre>
-					</td>
-<td class="middle60"><pre><code>(ADD (LENGTH L) (LENGTH J) 3)
-X
-3</code></pre></td>
-				</tr><tr>
-					<td class="middle40"><pre style="box-shadow: none">list_of_dotted_pairs = ((EXPR . EXPR)*)
-list_of_variables = ( SYMBOL*)
-variable = SYMBOL
-environment_expression = EXPR</pre>
-					</td>
-<td class="middle50">&nbsp;</td>
-				</tr>				
-				</table>
+				<section><h3>Continuations</h3>
+				<p>What and why</p>
+<ul>
+	<li>Originally developed for handling data streams using lazy evaluation</li>
+	<li>Uses closures to represent each step of the program</li>
+</ul>
 				</section>
-				<section><h3>Built-in Functions</h3>
-<p>TRUE<br/>
-FALSE<br/>
-HD<br/>
-TL<br/>
-CONS<br/>
-ADD<br/>
-MULT<br/>
-SUB<br/>
-DIVNULL<br/>
-ATOMP<br/>
-SYMBOLP<br/>
-NUMBERP<br/>
-LISTP<br/>
-ZEROP<br/>
-EQUAL</p></section>
-				<section><h3>Structure of the Evaluator</h3>
-<pre>to eval an expression e in an environment env =
-	if e is NIL then NIL
-	else if e is a number n then n
-	e is a SYMBOL then look it up in the environment
-	else if e is a special form
-		 then evaluate special form
-	else if e is of the form (expr1 expr2 … exprN)
-		then (eval expr1 env) (eval expr2 env) … (eval exprN env)
-	else ERROR </pre></section>
-				<section><h3>Structure of the Environment</h3>
-				<p>We extend the algebraic type we used last time with the notion of a
-					 function in the form of the <code>COMP</code> type; and simplify the value of a <code>SYMBOL</code> to be a string.</p>
-<pre><code>type [&lt;StructuralEquality;NoComparison&gt;] SEXPR = SYMBOL of string
-                                                       | NUMBER of int | NIL
-                                                       | CONS of (SEXPR * SEXPR)
-                                                       | COMPUTATION of COMP
-and [&lt;ReferenceEquality;NoComparison&gt;] COMP = { func : SEXPR -&gt; SEXPR } ;;</code></pre>
-<p>The environment is a SEXPR which is a list of SYMBOL * SEXPR pairs</p>
-<img src="./assets/Environment.png">
+				<section><h3>I/O with Continuations</h3>
+					<p>An application</p>
+	<ul>
+		<li>I/O is made available as a pair of lazy lists, a request list and a response list</li>
+		<li>A program is a function which takes a response list to a request list</li>
+	</ul>
+	<pre><code>type Request = Getq | Putq of char
+type Response = Getp of char | Putp
+type Dialog = Response list -> Request list</code></pre>
+<p>For example</p>
+<pre><code>let readChar f p =
+	Getq ::
+	(match p with 
+	 | (Getp c) :: p1 -> f c p1
+	 | _ -> []);;</code></pre>
+<p>putting the Getq at the head of the request queue causes the Getp c to exist at the head of the response queue</p>	 
+				</section>
+				<section><h3>Generalizing</h3>
+<p>Continuation style uses chained closures to construct a complex compound operation 
+from a collection of small basic operations.</p>
+<pre><code>type continuation = K of (unit -> unit)
+let execute (K f) = f()
+let stop = K (fun () -> ());;</code></pre>
+
+					
+<p>Our building blocks are</p>
+<pre><code>Producer: (X -> continuation) -> continuation
+Consumer: X -> continuation -> continuation
+Operation: continuation -> continuation;;</code></pre>
+<ul><li>Where possible, the continuations are built during the construction phase.</li>
+<li>Each step is provided with the rest of the execution as a continuation building block(s).</li>
+<li>A producer is provided with a consumer which generates a continuation from the produced data at execution time.</li>
+</ul>		
+					</section>
+				<section><h3>Example -- Console I/O</h3>
+					<p>First we define some primitives:</p>
+<pre><code>let putc (c: char) (k: continuation) =
+    let write () = System.Console.Write(c);
+                   execute k
+    K write
+let getc (g: char -> continuation) =
+    let read () = execute (g <| System.Console.ReadKey(true).KeyChar)
+    K read;;</code></pre>
+		<p>where we introduce the standard convenience function</p>	
+		<pre><code>let (<|) f x = (f x);;</code></pre>
+<p>Combine the primitives to get</p>
+<pre><code>let rec echo k = 
+    let echoChar c = if c = '\r'
+                     then putc '\n' k
+                     else putc c (echo k)
+    getc echoChar;;</code></pre>
+
 </section>
+<section><h3>Example -- Console I/O</h3>
+</section>
+<section><h3>Example -- Console I/O</h3>
+</section>
+<section><h3>Example -- Console I/O</h3>
+</section>
+<section><h3>Example -- Console I/O</h3>
+</section>
+
+
+
 				<section class="conceptual" data-background-image="./assets/Concept.svg">					
 				<h3>Concept</h3>
 				<div>
